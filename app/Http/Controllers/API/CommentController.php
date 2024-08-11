@@ -19,7 +19,7 @@ class CommentController extends BaseController
         'content'=> $validated['content'],
         'user_id'=> auth()->id(),
       ]);
-      return $this->sendResponse($comment, 'Success comment');
+      return $this->sendResponse($comment, 'Success');
     } catch (\Throwable $th) {
       return $this->sendError($th->getMessage(), $th->getCode());
     }

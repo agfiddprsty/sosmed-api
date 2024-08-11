@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+Route::prefix('posts')->group(function () {
+  Route::get('/', [PostController::class, 'index']);
+});
 
 
 Route::middleware("auth:sanctum")->group(function () {
@@ -22,7 +25,6 @@ Route::middleware("auth:sanctum")->group(function () {
   });
 
   Route::prefix('posts')->group(function () {
-    Route::get('/', [PostController::class, 'index']);
     Route::post('/create', [PostController::class, 'store']);
     Route::put('/{id}', [PostController::class, 'update']);
     Route::delete('/{id}', [PostController::class, 'destroy']);

@@ -8,6 +8,8 @@ use App\Models\Like;
 use App\Models\Post;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Validator;
 
 class PostController extends BaseController
 {
@@ -15,7 +17,7 @@ class PostController extends BaseController
   {
     try {
       $posts = Post::with(['user', 'comments.user', 'likes.user'])->get();
-      return $this->sendResponse(PostResource::collection($posts), 'Posts retrieved successfully.');
+      return $this->sendResponse(PostResource::collection($posts), 'Success');
     } catch (\Throwable $th) {
       return $this->sendError($th->getMessage(), $th->getCode());
     }
@@ -24,16 +26,26 @@ class PostController extends BaseController
   public function store(Request $request)
   {
     try {
-      $validated = $request->validate([
+      $validated = Validator::make($request->all(), [
         'content' => 'required|string',
-        'image' => 'nullable|string',
+        'image' => 'nullable|image:jpeg,png,jpg,gif,svg|max:2048',
         'video' => 'nullable|string',
       ]);
+      $uploadFolder = 'users';
+      $image_uploaded_path = '';
+      if ($request->file('image')) {
+        $image = $request->file('image');
+        $image_uploaded_path = $image->store($uploadFolder, 'public');
+      }
+      if ($validated->fails()) {
+        return $this->sendError($validated->errors()->first() ?? "Validation error", $validated->errors());
+      }
+      $input = $request->all();
       $post = Post::create([
         'user_id' => auth()->id(),
-        'content' => $validated['content'],
-        'image' => $validated['image'] ?? null,
-        'video' => $validated['video'] ?? null,
+        'content' => $input['content'],
+        'image' => $image_uploaded_path != '' ? Storage::disk('public')->url($image_uploaded_path) : null,
+        'video' => $input['video'] ?? null,
       ]);
       return response()->json($post);
     } catch (\Throwable $th) {
@@ -77,7 +89,7 @@ class PostController extends BaseController
         return $this->sendResponse(null, 'Success');
       } else {
         $like = Like::create(['post_id' => $id, 'user_id' => auth()->id()]);
-        return $this->sendResponse($like, 'Post liked successfully.');
+        return $this->sendResponse($like, 'Success');
       }
     } catch (\Throwable $th) {
       return $this->sendError($th->getMessage(), $th->getCode());
